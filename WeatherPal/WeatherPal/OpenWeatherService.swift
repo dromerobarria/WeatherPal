@@ -60,6 +60,19 @@ struct OpenWeatherService: WeatherServiceProtocol {
             throw error
         }
     }
+
+    func fetchWeatherByCityName(_ city: String) async throws -> (hourly: [HourlyWeather], daily: [DailyWeather]) {
+        let geoURL = URL(string: "https://api.openweathermap.org/geo/1.0/direct?q=\(city.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? city)&limit=1&appid=\(apiKey)")!
+        let (geoData, geoResponse) = try await session.data(for: URLRequest(url: geoURL))
+        guard let geoHttp = geoResponse as? HTTPURLResponse, geoHttp.statusCode == 200 else {
+            throw URLError(.badServerResponse)
+        }
+        let geoResults = try JSONDecoder().decode([GeocodeResult].self, from: geoData)
+        guard let geo = geoResults.first else {
+            throw URLError(.cannotFindHost)
+        }
+        return try await fetchWeather(lat: geo.lat, lon: geo.lon)
+    }
 }
 
 // MARK: - OpenWeather API Models
@@ -96,4 +109,10 @@ private struct OWWeather: Decodable {
         default: return "cloud.sun.fill"
         }
     }
+}
+
+private struct GeocodeResult: Decodable {
+    let name: String
+    let lat: Double
+    let lon: Double
 } 

@@ -17,6 +17,7 @@ struct HomeView: View {
     @Bindable var viewModel: HomeViewModel
     @State private var showErrorBanner = false
     @State private var searchTip = SearchTip()
+    @State private var path = NavigationPath()
 
     @MainActor
     func weatherIconView(iconCode: String?, fallback: String) -> some View {
@@ -31,7 +32,7 @@ struct HomeView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ZStack(alignment: .bottom) {
                 LinearGradient(
                     colors: [Color.blue, Color.cyan, Color.white],
@@ -227,13 +228,20 @@ struct HomeView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        // Search action
+                        path.append("search")
                     } label: {
                         Image(systemName: "magnifyingglass")
                             .foregroundStyle(.primary)
+                            .padding(8)
+                            .background(Circle().fill(Color(.systemBackground).opacity(0.85)))
                     }
                     .accessibilityLabel("Search city")
                     .popoverTip(searchTip)
+                }
+            }
+            .navigationDestination(for: String.self) { route in
+                if route == "search" {
+                    CitySearchView()
                 }
             }
         }
