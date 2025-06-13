@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-test-lint:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Run SwiftLint
+        run: swiftlint --strict
+
+      - name: Build
+        run: xcodebuild -project WeatherPal/WeatherPal.xcodeproj -scheme WeatherPal -destination 'platform=iOS Simulator,name=iPhone 15' build
+
+      - name: Run Tests
+        run: xcodebuild test -project WeatherPal/WeatherPal.xcodeproj -scheme WeatherPal -destination 'platform=iOS Simulator,name=iPhone 15' -resultBundlePath TestResults
+
+      - name: Upload Test Results (if failed)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: TestResults 
