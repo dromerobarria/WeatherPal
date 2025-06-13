@@ -1,11 +1,28 @@
 import Foundation
 import Observation
 
+struct CityCoordinates {
+    let name: String
+    let lat: Double
+    let lon: Double
+}
+
 enum City: String, CaseIterable, Identifiable {
     case rio = "Rio de Janeiro"
     case beijing = "Beijing"
     case losAngeles = "Los Angeles"
     var id: String { rawValue }
+
+    var coordinates: CityCoordinates {
+        switch self {
+        case .rio:
+            return CityCoordinates(name: rawValue, lat: -22.9068, lon: -43.1729)
+        case .beijing:
+            return CityCoordinates(name: rawValue, lat: 39.9042, lon: 116.4074)
+        case .losAngeles:
+            return CityCoordinates(name: rawValue, lat: 34.0522, lon: -118.2437)
+        }
+    }
 }
 
 struct HourlyWeather: Identifiable {
@@ -24,36 +41,63 @@ struct DailyWeather: Identifiable {
     let symbol: String
 }
 
+protocol WeatherServiceProtocol {
+    func fetchWeather(cityName: String) async throws -> (hourly: [HourlyWeather], daily: [DailyWeather])
+}
+
 @Observable final class HomeViewModel {
-    var selectedCity: City = .rio
+    var selectedCity: City = .rio {
+        didSet { Task { await fetchWeather() } }
+    }
     var hourly: [HourlyWeather] = []
     var daily: [DailyWeather] = []
+    var lastUpdated: Date? = nil
+    var errorMessage: String? = nil
+    private let weatherService: WeatherServiceProtocol
 
-    init() {
-        loadMockData()
+    init(weatherService: WeatherServiceProtocol = OpenWeatherService()) {
+        self.weatherService = weatherService
+        Task { await fetchWeather() }
     }
 
-    func loadMockData() {
-        let now = Calendar.current.component(.hour, from: Date())
-        hourly = (now..<24).map { hour in
-            HourlyWeather(
-                hour: hour,
-                temperature: Int.random(in: 18...32),
-                humidity: Int.random(in: 40...90),
-                symbol: ["cloud.sun.fill", "sun.max.fill", "cloud.rain.fill"].randomElement()!
-            )
+    @MainActor
+    func fetchWeather() async {
+        do {
+            let (hourly, daily) = try await weatherService.fetchWeather(cityName: selectedCity.rawValue)
+            self.hourly = hourly
+            self.daily = daily
+            self.lastUpdated = Date()
+            self.errorMessage = nil
+        } catch {
+            self.hourly = Self.placeholderHourly()
+            self.daily = Self.placeholderDaily()
+            self.errorMessage = "Unfortunately we are not able to get the information."
         }
-        let days = (0..<5).map { offset -> String in
+    }
+
+    @MainActor
+    func refresh() async {
+        await fetchWeather()
+    }
+
+    func clearError() {
+        errorMessage = nil
+    }
+
+    static func placeholderHourly() -> [HourlyWeather] {
+        let now = Calendar.current.component(.hour, from: Date())
+        return (now..<min(now+6, 24)).map { hour in
+            HourlyWeather(hour: hour, temperature: 0, humidity: 0, symbol: "questionmark")
+        }
+    }
+
+    static func placeholderDaily() -> [DailyWeather] {
+        let days = (0..<3).map { offset -> String in
             let date = Calendar.current.date(byAdding: .day, value: offset, to: Date())!
             return date.formatted(.dateTime.weekday())
         }
-        daily = days.map { day in
-            DailyWeather(
-                day: day,
-                description: ["Clear", "Cloudy", "Rainy", "Partly Cloudy"].randomElement()!,
-                temperature: Int.random(in: 18...32),
-                symbol: ["cloud.sun.fill", "sun.max.fill", "cloud.rain.fill"].randomElement()!
-            )
+        return days.map { day in
+            DailyWeather(day: day, description: "—", temperature: 0, symbol: "questionmark")
         }
     }
 } 
