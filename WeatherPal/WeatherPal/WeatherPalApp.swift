@@ -35,7 +35,7 @@ struct WeatherPalApp: App {
                             showSplash = false
                         }
                 } else {
-                    ContentView()
+                    HomeView(viewModel: HomeViewModel())
                 }
             }
         }
