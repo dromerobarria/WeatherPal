@@ -17,8 +17,10 @@ enum City: String, CaseIterable, Identifiable {
         switch self {
         case .rio:
             return CityCoordinates(name: rawValue, lat: -22.9068, lon: -43.1729)
+
         case .beijing:
             return CityCoordinates(name: rawValue, lat: 39.9042, lon: 116.4074)
+
         case .losAngeles:
             return CityCoordinates(name: rawValue, lat: 34.0522, lon: -118.2437)
         }
@@ -53,8 +55,8 @@ protocol WeatherServiceProtocol {
     }
     var hourly: [HourlyWeather] = []
     var daily: [DailyWeather] = []
-    var lastUpdated: Date? = nil
-    var errorMessage: String? = nil
+    var lastUpdated: Date?
+    var errorMessage: String?
     var isLoading: Bool = false
     private let weatherService: WeatherServiceProtocol
     private var fetchTask: Task<Void, Never>?
@@ -100,7 +102,7 @@ protocol WeatherServiceProtocol {
 
     static func placeholderHourly() -> [HourlyWeather] {
         let now = Calendar.current.component(.hour, from: Date())
-        return (now..<min(now+6, 24)).map { hour in
+        return (now..<min(now + 6, 24)).map { hour in
             HourlyWeather(hour: hour, temperature: 0, humidity: 0, symbol: "questionmark", iconCode: nil)
         }
     }
@@ -114,4 +116,4 @@ protocol WeatherServiceProtocol {
             DailyWeather(day: day, description: "—", temperature: 0, symbol: "questionmark", iconCode: nil)
         }
     }
-} 
+}

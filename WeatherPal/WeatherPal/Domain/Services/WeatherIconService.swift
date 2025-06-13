@@ -51,4 +51,4 @@ actor WeatherIconService {
         }
         return Image(systemName: "questionmark")
     }
-} 
+}

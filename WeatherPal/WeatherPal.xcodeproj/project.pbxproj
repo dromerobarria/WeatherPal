@@ -104,6 +104,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9E4242612DFC6AA300B276D3 /* Build configuration list for PBXNativeTarget "WeatherPal" */;
 			buildPhases = (
+				9E4242A42DFC8E5000B276D3 /* Run Script SwiftLint */,
 				9E4242372DFC6AA200B276D3 /* Sources */,
 				9E4242382DFC6AA200B276D3 /* Frameworks */,
 				9E4242392DFC6AA200B276D3 /* Resources */,
@@ -239,6 +240,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		9E4242A42DFC8E5000B276D3 /* Run Script SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Run Script SwiftLint";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = " if which swiftlint > /dev/null; then\n       swiftlint\n     else\n       echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\n     fi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		9E4242372DFC6AA200B276D3 /* Sources */ = {

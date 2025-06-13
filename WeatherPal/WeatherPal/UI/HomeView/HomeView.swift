@@ -250,7 +250,7 @@ struct HomeView: View {
 
 struct AsyncWeatherIcon: View {
     let iconCode: String
-    @State private var image: Image? = nil
+    @State private var image: Image?
 
     var body: some View {
         Group {
@@ -266,4 +266,4 @@ struct AsyncWeatherIcon: View {
             image = await WeatherIconService.shared.image(for: iconCode)
         }
     }
-} 
+}

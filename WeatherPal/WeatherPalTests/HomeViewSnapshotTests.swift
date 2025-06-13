@@ -43,4 +43,4 @@ final class MockWeatherService: WeatherServiceProtocol {
             DailyWeather(day: "Sat, Nov 2", description: "Clouds", temperature: 23, symbol: "cloud.sun.fill", iconCode: "02d")
         ])
     }
-} 
+}

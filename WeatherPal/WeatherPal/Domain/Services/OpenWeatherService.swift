@@ -41,7 +41,7 @@ struct OpenWeatherService: WeatherServiceProtocol {
             let daily = next5Days.compactMap { day -> DailyWeather? in
                 guard let items = groupedByDay[day] else { return nil }
                 let targetHour = 12
-                let closest = items.min(by: { abs(calendar.component(.hour, from: Date(timeIntervalSince1970: $0.dt)) - targetHour) < abs(calendar.component(.hour, from: Date(timeIntervalSince1970: $1.dt)) - targetHour) })
+                let closest = items.min { abs(calendar.component(.hour, from: Date(timeIntervalSince1970: $0.dt)) - targetHour) < abs(calendar.component(.hour, from: Date(timeIntervalSince1970: $1.dt)) - targetHour) }
                 guard let item = closest else { return nil }
                 let date = Date(timeIntervalSince1970: item.dt)
                 let dayLabel = date.formatted(.dateTime.weekday().month().day().locale(Locale(identifier: "en_US_POSIX")))
@@ -115,4 +115,4 @@ private struct GeocodeResult: Decodable {
     let name: String
     let lat: Double
     let lon: Double
-} 
+}

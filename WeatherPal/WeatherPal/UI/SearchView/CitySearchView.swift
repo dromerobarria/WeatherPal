@@ -4,7 +4,7 @@ struct CitySearchView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var city: String = ""
     @State private var isLoading = false
-    @State private var errorMessage: String? = nil
+    @State private var errorMessage: String?
     @State private var showErrorBanner = false
     @State private var hourly: [HourlyWeather] = []
     @State private var daily: [DailyWeather] = []
@@ -200,4 +200,4 @@ struct CitySearchView: View {
         }
         .frame(width: 40, height: 40)
     }
-} 
+}
