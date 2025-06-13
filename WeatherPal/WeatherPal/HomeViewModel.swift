@@ -42,7 +42,7 @@ struct DailyWeather: Identifiable {
 }
 
 protocol WeatherServiceProtocol {
-    func fetchWeather(cityName: String) async throws -> (hourly: [HourlyWeather], daily: [DailyWeather])
+    func fetchWeather(lat: Double, lon: Double) async throws -> (hourly: [HourlyWeather], daily: [DailyWeather])
 }
 
 @Observable final class HomeViewModel {
@@ -55,6 +55,7 @@ protocol WeatherServiceProtocol {
     var errorMessage: String? = nil
     var isLoading: Bool = false
     private let weatherService: WeatherServiceProtocol
+    private var fetchTask: Task<Void, Never>?
 
     init(weatherService: WeatherServiceProtocol = OpenWeatherService()) {
         self.weatherService = weatherService
@@ -63,19 +64,27 @@ protocol WeatherServiceProtocol {
 
     @MainActor
     func fetchWeather() async {
-        isLoading = true
-        defer { isLoading = false }
-        do {
-            let (hourly, daily) = try await weatherService.fetchWeather(cityName: selectedCity.rawValue)
-            self.hourly = hourly
-            self.daily = daily
-            self.lastUpdated = Date()
-            self.errorMessage = nil
-        } catch {
-            self.hourly = Self.placeholderHourly()
-            self.daily = Self.placeholderDaily()
-            self.errorMessage = "Unfortunately we are not able to get the information."
+        fetchTask?.cancel()
+        fetchTask = Task { [weak self] in
+            guard let self else { return }
+            isLoading = true
+            defer { isLoading = false }
+            let coords = selectedCity.coordinates
+            do {
+                let (hourly, daily) = try await weatherService.fetchWeather(lat: coords.lat, lon: coords.lon)
+                self.hourly = hourly
+                self.daily = daily
+                self.lastUpdated = Date()
+                self.errorMessage = nil
+            } catch {
+                if (error as? URLError)?.code != .cancelled {
+                    self.hourly = Self.placeholderHourly()
+                    self.daily = Self.placeholderDaily()
+                    self.errorMessage = "Unfortunately we are not able to get the information."
+                }
+            }
         }
+        await fetchTask?.value
     }
 
     @MainActor

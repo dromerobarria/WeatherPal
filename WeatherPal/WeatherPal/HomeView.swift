@@ -134,16 +134,22 @@ struct HomeView: View {
                     }
                 }
                 if let lastUpdated = viewModel.lastUpdated {
-                    Text("Last updated: \(lastUpdated.formatted(date: .abbreviated, time: .shortened))")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .padding(.bottom, showErrorBanner ? 56 : 24)
-                        .padding(.horizontal)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.systemBackground).opacity(0.8))
-                        )
-                        .padding(.bottom, 8)
+                    HStack {
+                        Spacer()
+                        Text("Last updated: \(lastUpdated.formatted(date: .abbreviated, time: .shortened))")
+                            .font(.footnote)
+                            .foregroundStyle(.primary)
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemBackground).opacity(0.85))
+                            )
+                        Spacer()
+                    }
+                    .padding(.bottom, showErrorBanner ? 56 : 24)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
                 }
                 if showErrorBanner, let error = viewModel.errorMessage {
                     HStack(spacing: 8) {
@@ -193,6 +199,7 @@ struct HomeView: View {
                         // Search action
                     } label: {
                         Image(systemName: "magnifyingglass")
+                            .foregroundStyle(.primary)
                     }
                     .accessibilityLabel("Search city")
                 }

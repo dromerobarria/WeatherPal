@@ -5,87 +5,76 @@ struct OpenWeatherService: WeatherServiceProtocol {
     private let session: URLSession = .shared
 
     func fetchWeather(lat: Double, lon: Double) async throws -> (hourly: [HourlyWeather], daily: [DailyWeather]) {
-        let url = URL(string: "https://api.openweathermap.org/data/3.0/onecall?lat=\(lat)&lon=\(lon)&units=metric&appid=\(apiKey)")!
+        let url = URL(string: "https://api.openweathermap.org/data/2.5/forecast?lat=\(lat)&lon=\(lon)&units=metric&appid=\(apiKey)")!
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-
-        let (data, response) = try await session.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw URLError(.badServerResponse)
+        print("[WeatherService] Requesting: \(url)")
+        do {
+            let (data, response) = try await session.data(for: request)
+            if let httpResponse = response as? HTTPURLResponse {
+                print("[WeatherService] Response status: \(httpResponse.statusCode)")
+            }
+            let decoded = try JSONDecoder().decode(OWForecastResponse.self, from: data)
+            let now = Date()
+            let calendar = Calendar.current
+            // Next hours: from now to end of today (max 24h)
+            let hourly = decoded.list.filter { item in
+                let date = Date(timeIntervalSince1970: item.dt)
+                return date > now && calendar.isDate(date, inSameDayAs: now)
+            }.prefix(8).map { item in
+                let date = Date(timeIntervalSince1970: item.dt)
+                let hour = calendar.component(.hour, from: date)
+                return HourlyWeather(
+                    hour: hour,
+                    temperature: Int(item.main.temp.rounded()),
+                    humidity: item.main.humidity,
+                    symbol: item.weather.first?.sfSymbol ?? "cloud.sun.fill"
+                )
+            }
+            // Next 5 days: pick the forecast closest to 12:00 for each day
+            let groupedByDay = Dictionary(grouping: decoded.list) { item in
+                let date = Date(timeIntervalSince1970: item.dt)
+                return calendar.startOfDay(for: date)
+            }
+            let next5Days = groupedByDay.keys.sorted().prefix(5)
+            let daily = next5Days.compactMap { day -> DailyWeather? in
+                guard let items = groupedByDay[day] else { return nil }
+                let targetHour = 12
+                let closest = items.min(by: { abs(calendar.component(.hour, from: Date(timeIntervalSince1970: $0.dt)) - targetHour) < abs(calendar.component(.hour, from: Date(timeIntervalSince1970: $1.dt)) - targetHour) })
+                guard let item = closest else { return nil }
+                let date = Date(timeIntervalSince1970: item.dt)
+                let dayLabel = date.formatted(.dateTime.weekday())
+                return DailyWeather(
+                    day: dayLabel,
+                    description: item.weather.first?.main ?? "Clear",
+                    temperature: Int(item.main.temp.rounded()),
+                    symbol: item.weather.first?.sfSymbol ?? "cloud.sun.fill"
+                )
+            }
+            print("[WeatherService] Success: hourly=\(hourly.count), daily=\(daily.count)")
+            return (Array(hourly), Array(daily))
+        } catch {
+            print("[WeatherService] Error: \(error)")
+            throw error
         }
-        let decoded = try JSONDecoder().decode(OpenWeatherResponse.self, from: data)
-        let now = Calendar.current.component(.hour, from: Date())
-        let hourly = decoded.hourly.filter { hour in
-            let date = Date(timeIntervalSince1970: hour.dt)
-            let hourComponent = Calendar.current.component(.hour, from: date)
-            return hourComponent >= now
-        }.prefix(24 - now).enumerated().map { idx, hour in
-            let date = Date(timeIntervalSince1970: hour.dt)
-            let hourComponent = Calendar.current.component(.hour, from: date)
-            return HourlyWeather(
-                hour: hourComponent,
-                temperature: Int(hour.temp.rounded()),
-                humidity: hour.humidity,
-                symbol: hour.weather.first?.sfSymbol ?? "cloud.sun.fill"
-            )
-        }
-        let daily = decoded.daily.prefix(5).map { day in
-            let date = Date(timeIntervalSince1970: day.dt)
-            let dayLabel = date.formatted(.dateTime.weekday())
-            return DailyWeather(
-                day: dayLabel,
-                description: day.weather.first?.main ?? "Clear",
-                temperature: Int(day.temp.day.rounded()),
-                symbol: day.weather.first?.sfSymbol ?? "cloud.sun.fill"
-            )
-        }
-        return (Array(hourly), Array(daily))
     }
-
-    func fetchWeather(cityName: String) async throws -> (hourly: [HourlyWeather], daily: [DailyWeather]) {
-        // 1. Geocode city name
-        let geoURL = URL(string: "https://api.openweathermap.org/geo/1.0/direct?q=\(cityName.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? cityName)&limit=1&appid=\(apiKey)")!
-        let (geoData, geoResponse) = try await session.data(for: URLRequest(url: geoURL))
-        guard let geoHttp = geoResponse as? HTTPURLResponse, geoHttp.statusCode == 200 else {
-            throw URLError(.badServerResponse)
-        }
-        let geoResults = try JSONDecoder().decode([GeocodeResult].self, from: geoData)
-        guard let geo = geoResults.first else {
-            throw URLError(.cannotFindHost)
-        }
-        // 2. Fetch weather by coordinates
-        return try await fetchWeather(lat: geo.lat, lon: geo.lon)
-    }
-}
-
-private struct GeocodeResult: Decodable {
-    let name: String
-    let lat: Double
-    let lon: Double
 }
 
 // MARK: - OpenWeather API Models
 
-private struct OpenWeatherResponse: Decodable {
-    let hourly: [OWHour]
-    let daily: [OWDay]
+private struct OWForecastResponse: Decodable {
+    let list: [OWForecastItem]
 }
 
-private struct OWHour: Decodable {
+private struct OWForecastItem: Decodable {
     let dt: TimeInterval
+    let main: OWMain
+    let weather: [OWWeather]
+}
+
+private struct OWMain: Decodable {
     let temp: Double
     let humidity: Int
-    let weather: [OWWeather]
-}
-
-private struct OWDay: Decodable {
-    let dt: TimeInterval
-    let temp: OWDayTemp
-    let weather: [OWWeather]
-}
-
-private struct OWDayTemp: Decodable {
-    let day: Double
 }
 
 private struct OWWeather: Decodable {
