@@ -53,6 +53,7 @@ protocol WeatherServiceProtocol {
     var daily: [DailyWeather] = []
     var lastUpdated: Date? = nil
     var errorMessage: String? = nil
+    var isLoading: Bool = false
     private let weatherService: WeatherServiceProtocol
 
     init(weatherService: WeatherServiceProtocol = OpenWeatherService()) {
@@ -62,6 +63,8 @@ protocol WeatherServiceProtocol {
 
     @MainActor
     func fetchWeather() async {
+        isLoading = true
+        defer { isLoading = false }
         do {
             let (hourly, daily) = try await weatherService.fetchWeather(cityName: selectedCity.rawValue)
             self.hourly = hourly
