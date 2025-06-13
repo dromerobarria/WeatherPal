@@ -33,4 +33,29 @@ final class WeatherPalTests: XCTestCase {
         }
     }
 
+    func testHomeViewModel_successAndError() async {
+        // Arrange
+        final class MockWeatherService: WeatherServiceProtocol {
+            var shouldFail = false
+            func fetchWeather(lat: Double, lon: Double) async throws -> (hourly: [HourlyWeather], daily: [DailyWeather]) {
+                if shouldFail { throw URLError(.notConnectedToInternet) }
+                return ([HourlyWeather(hour: 12, temperature: 25, humidity: 50, symbol: "sun.max.fill", iconCode: "01d")],
+                        [DailyWeather(day: "Mon", description: "Clear", temperature: 25, symbol: "sun.max.fill", iconCode: "01d")])
+            }
+        }
+        let mock = MockWeatherService()
+        let viewModel = HomeViewModel(weatherService: mock)
+        // Act
+        await viewModel.fetchWeather()
+        // Assert
+        XCTAssertEqual(viewModel.hourly.count, 1)
+        XCTAssertEqual(viewModel.daily.count, 1)
+        XCTAssertNil(viewModel.errorMessage)
+        // Simulate error
+        mock.shouldFail = true
+        await viewModel.fetchWeather()
+        XCTAssertNotNil(viewModel.errorMessage)
+        XCTAssertFalse(viewModel.hourly.isEmpty) // Should show placeholder
+    }
+
 }
