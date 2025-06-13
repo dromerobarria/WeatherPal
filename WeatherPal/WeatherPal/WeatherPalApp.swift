@@ -23,9 +23,21 @@ struct WeatherPalApp: App {
         }
     }()
 
+    @State private var showSplash = true
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            Group {
+                if showSplash {
+                    SplashView()
+                        .task {
+                            try? await Task.sleep(nanoseconds: 1_500_000_000)
+                            showSplash = false
+                        }
+                } else {
+                    ContentView()
+                }
+            }
         }
         .modelContainer(sharedModelContainer)
     }
