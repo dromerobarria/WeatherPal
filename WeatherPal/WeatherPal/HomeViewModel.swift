@@ -31,6 +31,7 @@ struct HourlyWeather: Identifiable {
     let temperature: Int
     let humidity: Int
     let symbol: String
+    let iconCode: String?
 }
 
 struct DailyWeather: Identifiable {
@@ -39,6 +40,7 @@ struct DailyWeather: Identifiable {
     let description: String
     let temperature: Int
     let symbol: String
+    let iconCode: String?
 }
 
 protocol WeatherServiceProtocol {
@@ -99,7 +101,7 @@ protocol WeatherServiceProtocol {
     static func placeholderHourly() -> [HourlyWeather] {
         let now = Calendar.current.component(.hour, from: Date())
         return (now..<min(now+6, 24)).map { hour in
-            HourlyWeather(hour: hour, temperature: 0, humidity: 0, symbol: "questionmark")
+            HourlyWeather(hour: hour, temperature: 0, humidity: 0, symbol: "questionmark", iconCode: nil)
         }
     }
 
@@ -109,7 +111,7 @@ protocol WeatherServiceProtocol {
             return date.formatted(.dateTime.weekday())
         }
         return days.map { day in
-            DailyWeather(day: day, description: "—", temperature: 0, symbol: "questionmark")
+            DailyWeather(day: day, description: "—", temperature: 0, symbol: "questionmark", iconCode: nil)
         }
     }
 } 

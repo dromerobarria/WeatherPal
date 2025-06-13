@@ -4,6 +4,18 @@ struct HomeView: View {
     @Bindable var viewModel: HomeViewModel
     @State private var showErrorBanner = false
 
+    @MainActor
+    func weatherIconView(iconCode: String?, fallback: String) -> some View {
+        Group {
+            if let iconCode {
+                AsyncWeatherIcon(iconCode: iconCode)
+            } else {
+                Image(systemName: fallback)
+            }
+        }
+        .frame(width: 40, height: 40)
+    }
+
     var body: some View {
         NavigationStack {
             ZStack(alignment: .bottom) {
@@ -39,8 +51,7 @@ struct HomeView: View {
                                                     Text("—")
                                                         .font(.caption)
                                                         .foregroundStyle(.secondary)
-                                                    Image(systemName: "questionmark")
-                                                        .font(.title2)
+                                                    weatherIconView(iconCode: hour.iconCode, fallback: "questionmark")
                                                         .foregroundStyle(.secondary)
                                                     Text("\(hour.hour):00")
                                                         .font(.caption2)
@@ -51,8 +62,7 @@ struct HomeView: View {
                                                     Text("\(hour.humidity)%")
                                                         .font(.caption)
                                                         .foregroundStyle(.secondary)
-                                                    Image(systemName: hour.symbol)
-                                                        .font(.title2)
+                                                    weatherIconView(iconCode: hour.iconCode, fallback: hour.symbol)
                                                     Text("\(hour.hour):00")
                                                         .font(.caption2)
                                                 }
@@ -77,36 +87,43 @@ struct HomeView: View {
                                     ForEach(viewModel.daily) { day in
                                         HStack(spacing: 16) {
                                             if day.symbol == "questionmark" {
-                                                Image(systemName: "questionmark")
-                                                    .font(.title2)
+                                                weatherIconView(iconCode: day.iconCode, fallback: "questionmark")
                                                     .foregroundStyle(.secondary)
-                                                VStack(alignment: .leading, spacing: 4) {
+                                                VStack(alignment: .center, spacing: 4) {
+                                                    Spacer()
                                                     Text(day.day)
                                                         .font(.headline)
                                                         .foregroundStyle(.secondary)
-                                                    Text("—")
+                                                        .frame(maxWidth: .infinity, alignment: .center)
+                                                    Text("— throughout the day.")
                                                         .font(.subheadline)
                                                         .foregroundStyle(.secondary)
+                                                        .frame(maxWidth: .infinity, alignment: .center)
+                                                    Spacer()
                                                 }
                                                 Spacer()
                                                 Text("—")
                                                     .font(.title3.bold())
                                                     .foregroundStyle(.secondary)
                                             } else {
-                                                Image(systemName: day.symbol)
-                                                    .font(.title2)
-                                                VStack(alignment: .leading, spacing: 4) {
+                                                weatherIconView(iconCode: day.iconCode, fallback: day.symbol)
+                                                VStack(alignment: .center, spacing: 4) {
+                                                    Spacer()
                                                     Text(day.day)
                                                         .font(.headline)
-                                                    Text(day.description)
+                                                        .frame(maxWidth: .infinity, alignment: .center)
+                                                    Text("\(day.description) throughout the day.")
                                                         .font(.subheadline)
                                                         .foregroundStyle(.secondary)
+                                                        .frame(maxWidth: .infinity, alignment: .center)
+                                                    Spacer()
                                                 }
                                                 Spacer()
                                                 Text("\(day.temperature)°")
                                                     .font(.title3.bold())
                                             }
                                         }
+                                        .frame(minHeight: 64)
                                         .padding()
                                         .background(.thinMaterial)
                                         .cornerRadius(12)
@@ -204,6 +221,26 @@ struct HomeView: View {
                     .accessibilityLabel("Search city")
                 }
             }
+        }
+    }
+}
+
+struct AsyncWeatherIcon: View {
+    let iconCode: String
+    @State private var image: Image? = nil
+
+    var body: some View {
+        Group {
+            if let image {
+                image
+                    .resizable()
+                    .scaledToFit()
+            } else {
+                ProgressView()
+            }
+        }
+        .task(id: iconCode) {
+            image = await WeatherIconService.shared.image(for: iconCode)
         }
     }
 } 

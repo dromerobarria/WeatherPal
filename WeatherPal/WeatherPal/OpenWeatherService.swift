@@ -28,7 +28,8 @@ struct OpenWeatherService: WeatherServiceProtocol {
                     hour: hour,
                     temperature: Int(item.main.temp.rounded()),
                     humidity: item.main.humidity,
-                    symbol: item.weather.first?.sfSymbol ?? "cloud.sun.fill"
+                    symbol: item.weather.first?.sfSymbol ?? "cloud.sun.fill",
+                    iconCode: item.weather.first?.icon
                 )
             }
             // Next 5 days: pick the forecast closest to 12:00 for each day
@@ -43,12 +44,13 @@ struct OpenWeatherService: WeatherServiceProtocol {
                 let closest = items.min(by: { abs(calendar.component(.hour, from: Date(timeIntervalSince1970: $0.dt)) - targetHour) < abs(calendar.component(.hour, from: Date(timeIntervalSince1970: $1.dt)) - targetHour) })
                 guard let item = closest else { return nil }
                 let date = Date(timeIntervalSince1970: item.dt)
-                let dayLabel = date.formatted(.dateTime.weekday())
+                let dayLabel = date.formatted(.dateTime.weekday().month().day().locale(Locale(identifier: "en_US_POSIX")))
                 return DailyWeather(
                     day: dayLabel,
                     description: item.weather.first?.main ?? "Clear",
                     temperature: Int(item.main.temp.rounded()),
-                    symbol: item.weather.first?.sfSymbol ?? "cloud.sun.fill"
+                    symbol: item.weather.first?.sfSymbol ?? "cloud.sun.fill",
+                    iconCode: item.weather.first?.icon
                 )
             }
             print("[WeatherService] Success: hourly=\(hourly.count), daily=\(daily.count)")
