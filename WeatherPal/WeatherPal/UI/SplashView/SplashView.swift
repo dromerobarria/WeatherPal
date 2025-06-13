@@ -1,3 +1,10 @@
+//
+//  SplashView.swift
+//  WeatherPal
+//
+//  Created by Daniel Romero on 13-06-25.
+//
+
 import SwiftUI
 
 struct SplashView: View {
