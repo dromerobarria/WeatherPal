@@ -1,8 +1,22 @@
 import SwiftUI
+import TipKit
+
+struct SearchTip: Tip {
+    var title: Text {
+        Text("Search for a City")
+    }
+    var message: Text? {
+        Text("Tap the magnifying glass in the top right to search for any city.")
+    }
+    var image: Image? {
+        Image(systemName: "magnifyingglass")
+    }
+}
 
 struct HomeView: View {
     @Bindable var viewModel: HomeViewModel
     @State private var showErrorBanner = false
+    @State private var searchTip = SearchTip()
 
     @MainActor
     func weatherIconView(iconCode: String?, fallback: String) -> some View {
@@ -219,6 +233,7 @@ struct HomeView: View {
                             .foregroundStyle(.primary)
                     }
                     .accessibilityLabel("Search city")
+                    .popoverTip(searchTip)
                 }
             }
         }

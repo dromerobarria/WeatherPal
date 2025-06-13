@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import TipKit
 
 @main
 struct WeatherPalApp: App {
@@ -22,6 +23,10 @@ struct WeatherPalApp: App {
             fatalError("Could not create ModelContainer: \(error)")
         }
     }()
+
+    init() {
+        try? Tips.configure()
+    }
 
     @State private var showSplash = true
 
